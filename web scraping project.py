@@ -1,55 +1,27 @@
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 import csv
 
-date = input("Please enter a Date in the following formate MM/DD/YYYY: ")
+url = "https://www.scrapethissite.com/pages/simple/"
+resp = requests.get(url)
 
-page = requests.get(f"https://www.yallakora.com/match-center?date={date}")
+soup = BeautifulSoup(resp.text, "lxml")
+countries = soup.find_all("div", class_="country")
 
-def main(page):
-    soup = BeautifulSoup(page.content, "lxml")
-    matches_details = []
+with open("countries_data.csv", mode="w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Country", "Capital", "Population", "Area_km2"])
+    
+    for c in countries:
+        name = c.find("h3", class_="country-name").get_text(strip=True)
+        capital_tag = c.find("span", class_="country-capital")
+        population_tag = c.find("span", class_="country-population")
+        area_tag = c.find("span", class_="country-area")
+        
+        capital = capital_tag.get_text(strip=True) if capital_tag else ""
+        population = population_tag.get_text(strip=True) if population_tag else ""
+        area = area_tag.get_text(strip=True) if area_tag else ""
+        
+        writer.writerow([name, capital, population, area])
 
-    arabCups = soup.find_all("div", class_="matchCard")
-
-    def get_match_info(card):
-        title = card.find("div", class_="title").find("h2").text.strip()
-
-        all_matches = card.find_all("div", class_="item")
-
-        for match in all_matches:
-            try:
-                team_A = match.find("div", class_="teamA").find("p").text.strip()
-                team_B = match.find("div", class_="teamB").find("p").text.strip()
-
-                result_section = match.find("div", class_="MResult")
-                score_spans = result_section.find_all("span", class_="score")
-
-                score = f"{score_spans[0].text.strip()} - {score_spans[1].text.strip()}"
-                time = result_section.find("span", class_="time").text.strip()
-
-                matches_details.append({
-                    "نوع البطولة": title,
-                    "الفريق الاول": team_A,
-                    "الفريق الثاني": team_B,
-                    "معاد المباراه": time,
-                    "النتيجة": score
-                })
-
-            except:
-                continue
-
-    for card in arabCups:
-        get_match_info(card)
-
-    if matches_details:
-        keys = matches_details[0].keys()
-        with open("matches-details.csv", "w", newline="", encoding="utf-8") as output_file:
-            dict_writer = csv.DictWriter(output_file, keys)
-            dict_writer.writeheader()
-            dict_writer.writerows(matches_details)
-        print("file created successfully")
-    else:
-        print("No matches found for that date")
-
-main(page)
+print("Done — data saved in countries_data.csv")
