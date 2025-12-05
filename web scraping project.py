@@ -1,27 +1,46 @@
-import requests
 from bs4 import BeautifulSoup
+import requests
 import csv
 
 url = "https://www.scrapethissite.com/pages/simple/"
-resp = requests.get(url)
 
-soup = BeautifulSoup(resp.text, "lxml")
-countries = soup.find_all("div", class_="country")
+page = requests.get(url)
 
-with open("countries_data.csv", mode="w", newline="", encoding="utf-8") as f:
-    writer = csv.writer(f)
-    writer.writerow(["Country", "Capital", "Population", "Area_km2"])
+def main(page):
+    soup = BeautifulSoup(page.content, "lxml")
+    container = soup.find_all("div" , class_="row")[3:]
+    countriesDetails = []
     
-    for c in countries:
-        name = c.find("h3", class_="country-name").get_text(strip=True)
-        capital_tag = c.find("span", class_="country-capital")
-        population_tag = c.find("span", class_="country-population")
-        area_tag = c.find("span", class_="country-area")
+    def getRowInfo(row):
+        countriesRow = row.find_all("div" , class_="country")
         
-        capital = capital_tag.get_text(strip=True) if capital_tag else ""
-        population = population_tag.get_text(strip=True) if population_tag else ""
-        area = area_tag.get_text(strip=True) if area_tag else ""
-        
-        writer.writerow([name, capital, population, area])
+        for country in countriesRow:
+            countryName = country.find("h3").text.strip()
+            capital = country.find("div" , class_="country-info").find("span" , class_="country-capital").text.strip()
+            population = country.find("div" , class_="country-info").find("span" , class_="country-population").text.strip()
+            area = country.find("div" , class_="country-info").find("span" , class_="country-area").text.strip()
+            
+            countriesDetails.append({
+                "Country Name" : countryName,
+                "Capital" : capital,
+                "Population" : population,
+                "Area" : area
+            })
 
-print("Done — data saved in countries_data.csv")
+    for countryRow in container:
+        getRowInfo(countryRow)
+    
+    keys = countriesDetails[0].keys()
+    if countriesDetails:
+        keys = countriesDetails[0].keys()
+        with open("countries-details.csv", "w", newline="", encoding="utf-8") as output_file:
+            dict_writer = csv.DictWriter(output_file, keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(countriesDetails)
+        print("file created successfully")
+    else:
+        print("No matches found for that date")
+    
+
+
+main(page)
