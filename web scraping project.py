@@ -38,7 +38,7 @@ def main(page):
             dict_writer.writerows(countriesDetails)
         print("file created successfully")
     else:
-        print("No matches found for that date")
+        print("No Data Found!")
     
 
 
