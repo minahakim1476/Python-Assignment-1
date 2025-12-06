@@ -30,7 +30,6 @@ def main(page):
     for countryRow in container:
         getRowInfo(countryRow)
     
-    keys = countriesDetails[0].keys()
     if countriesDetails:
         keys = countriesDetails[0].keys()
         with open("countries-details.csv", "w", newline="", encoding="utf-8") as output_file:
